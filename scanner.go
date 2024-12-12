@@ -10,25 +10,13 @@ import (
 	"github.com/vingarcia/structscanner/tags"
 )
 
-// TagDecoder is the interface that allows the Decode function to get values
+// IteratorFunc is the interface that allows the ForEach function to get values
 // from any data source and then use these values to fill a targetStruct.
-//
-// The struct that implements this TagDecoder interface should
-// handle each call to the `IteratorFunc` by returning the value
-// that should be written to the Field described in the `field` argument.
-//
-// The Decode() function will then take care of checking and making any
-// necessary conversions between the returned value and actual struct field.
-//
-// The FuncTagDecoder and MapTagDecoder are examples of how this interface
-// can be implemented, please read the source code of these two types
-// to better understand this interface.
 type IteratorFunc func(field Field) error
 
-// Field is the input expected by the `DecodeField` method
-// of the TagDecoder interface and contains all the information
-// about the field that is currently being targeted by the
-// Decode() function.
+// Field is the input expected by the `IteratorFunc` and contains all
+// the information about the field that is currently being targeted
+// by the ForEach() function.
 type Field struct {
 	*fieldInfo
 	Set   func(value any) error
@@ -69,9 +57,9 @@ func GetStructInfo(targetStruct interface{}) (si StructInfo, err error) {
 	return si, err
 }
 
-// Decode reads from the input decoder in order to fill the
+// ForEach reads from the input decoder in order to fill the
 // attributes of an target struct.
-func Decode(targetStruct interface{}, iterate IteratorFunc) error {
+func ForEach(targetStruct interface{}, iterate IteratorFunc) error {
 	_, v, fields, err := getStructInfo(targetStruct)
 	if err != nil {
 		return err
