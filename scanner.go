@@ -14,7 +14,7 @@ import (
 // from any data source and then use these values to fill a targetStruct.
 //
 // The struct that implements this TagDecoder interface should
-// handle each call to `DecodeField()` by returning the value
+// handle each call to the `IteratorFunc` by returning the value
 // that should be written to the Field described in the `field` argument.
 //
 // The Decode() function will then take care of checking and making any
@@ -23,15 +23,21 @@ import (
 // The FuncTagDecoder and MapTagDecoder are examples of how this interface
 // can be implemented, please read the source code of these two types
 // to better understand this interface.
-type TagDecoder interface {
-	DecodeField(field Field) (interface{}, error)
-}
+type IteratorFunc func(field Field) error
 
 // Field is the input expected by the `DecodeField` method
 // of the TagDecoder interface and contains all the information
 // about the field that is currently being targeted by the
 // Decode() function.
 type Field struct {
+	*fieldInfo
+	Set   func(value any) error
+	Value any
+}
+
+// fieldInfo contains all the immutable values of
+// the Field so that we can keep this info cached.
+type fieldInfo struct {
 	idx int
 
 	Tags map[string]string
@@ -43,7 +49,7 @@ type Field struct {
 }
 
 type StructInfo struct {
-	Fields []Field
+	Fields []fieldInfo
 }
 
 // GetStructInfo will return (and cache) information about the given struct.
@@ -65,79 +71,32 @@ func GetStructInfo(targetStruct interface{}) (si StructInfo, err error) {
 
 // Decode reads from the input decoder in order to fill the
 // attributes of an target struct.
-func Decode(targetStruct interface{}, decoder TagDecoder) error {
-	t, v, fields, err := getStructInfo(targetStruct)
+func Decode(targetStruct interface{}, iterate IteratorFunc) error {
+	_, v, fields, err := getStructInfo(targetStruct)
 	if err != nil {
 		return err
 	}
 
 	for _, field := range fields {
-		rawValue, err := decoder.DecodeField(field)
-		if err != nil {
-			return fmt.Errorf("error decoding field %v: %w", t.Field(field.idx), err)
-		}
-
-		if rawValue == nil {
-			continue
-		}
-
-		if field.Kind == reflect.Slice {
-			sliceValue := reflect.ValueOf(rawValue)
-			sliceType := sliceValue.Type()
-			if sliceType.Kind() == reflect.Ptr {
-				sliceType = sliceType.Elem()
-				sliceValue = sliceValue.Elem()
-			}
-
-			if sliceType.Kind() != reflect.Slice {
-				return fmt.Errorf("expected slice for field %#v but got %v of type %v", t.Field(field.idx), sliceValue, sliceType)
-			}
-
-			elemType := field.Type.Elem()
-
-			sliceLen := sliceValue.Len()
-			targetSlice := reflect.MakeSlice(field.Type, sliceLen, sliceLen)
-			for i := 0; i < sliceLen; i++ {
-				convertedValue, err := types.NewConverter(sliceValue.Index(i).Interface()).Convert(elemType)
+		err := iterate(Field{
+			fieldInfo: &field,
+			Value:     v.Elem().Field(field.idx).Addr().Interface(),
+			Set: func(value any) error {
+				convertedValue, err := types.NewConverter(value).Convert(field.Type)
 				if err != nil {
-					return fmt.Errorf("error converting %v[%d]: %w", t.Field(field.idx).Name, i, err)
+					return err
 				}
 
-				targetSlice.Index(i).Set(convertedValue)
-			}
+				v.Elem().Field(field.idx).Set(convertedValue)
 
-			v.Elem().Field(field.idx).Set(targetSlice)
-			continue
-		}
-
-		decoder, ok := rawValue.(TagDecoder)
-		if ok {
-			fieldType := v.Elem().Field(field.idx).Type()
-			fieldAddr := v.Elem().Field(field.idx).Addr()
-			if fieldType.Kind() == reflect.Ptr {
-				if fieldAddr.Elem().IsNil() {
-					// If this field is a nil pointer, do struct.Field = new(*T):
-					fieldAddr.Elem().Set(reflect.New(fieldType.Elem()))
-				}
-				// Now since it is a pointer, drop one level for the
-				// decode function to receive a *struct instead of a **struct:
-				fieldAddr = fieldAddr.Elem()
-			}
-
-			err := Decode(fieldAddr.Interface(), decoder)
-			if err != nil {
-				return fmt.Errorf("error decoding nested field %q: %w", t.Field(field.idx).Name, err)
-			}
-			continue
-		}
-
-		convertedValue, err := types.NewConverter(rawValue).Convert(field.Type)
+				return nil
+			},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("error decoding field '%s' of type '%v': %w", field.Name, field.Type, err)
 		}
-
-		v.Elem().Field(field.idx).Set(convertedValue)
 	}
+
 	return nil
 }
 
@@ -147,7 +106,7 @@ func Decode(targetStruct interface{}, decoder TagDecoder) error {
 // works fine.
 var structInfoCache = &sync.Map{}
 
-func getStructInfo(targetStruct interface{}) (reflect.Type, reflect.Value, []Field, error) {
+func getStructInfo(targetStruct interface{}) (reflect.Type, reflect.Value, []fieldInfo, error) {
 	v := reflect.ValueOf(targetStruct)
 
 	t, fields, err := getStructInfoForType(v.Type())
@@ -163,10 +122,10 @@ func getStructInfo(targetStruct interface{}) (reflect.Type, reflect.Value, []Fie
 	return t, v, fields, err
 }
 
-func getStructInfoForType(ptrType reflect.Type) (reflect.Type, []Field, error) {
+func getStructInfoForType(ptrType reflect.Type) (reflect.Type, []fieldInfo, error) {
 	data, found := structInfoCache.Load(ptrType)
 	if found {
-		return ptrType.Elem(), data.([]Field), nil
+		return ptrType.Elem(), data.([]fieldInfo), nil
 	}
 
 	if ptrType.Kind() != reflect.Ptr {
@@ -178,7 +137,7 @@ func getStructInfoForType(ptrType reflect.Type) (reflect.Type, []Field, error) {
 		return nil, nil, fmt.Errorf("can only get struct info from structs, but got: %s", ptrType)
 	}
 
-	info := []Field{}
+	info := []fieldInfo{}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		// If it is unexported:
@@ -191,7 +150,7 @@ func getStructInfoForType(ptrType reflect.Type) (reflect.Type, []Field, error) {
 			return nil, nil, err
 		}
 
-		info = append(info, Field{
+		info = append(info, fieldInfo{
 			idx:  i,
 			Tags: parsedTags,
 			Name: field.Name,
