@@ -6,8 +6,8 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/vingarcia/structscanner/internal/types"
-	"github.com/vingarcia/structscanner/tags"
+	"github.com/vingarcia/structi/internal/types"
+	"github.com/vingarcia/structi/tags"
 )
 
 // IteratorFunc is the interface that allows the ForEach function to get values

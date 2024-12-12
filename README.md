@@ -1,7 +1,7 @@
 [![CI](https://github.com/VinGarcia/structscanner/actions/workflows/ci.yml/badge.svg)](https://github.com/VinGarcia/structscanner/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/VinGarcia/structscanner/branch/master/graph/badge.svg?token=5CNJ867C66)](https://codecov.io/gh/VinGarcia/structscanner)
-[![Go Reference](https://pkg.go.dev/badge/github.com/vingarcia/structscanner.svg)](https://pkg.go.dev/github.com/vingarcia/structscanner)
-![Go Report Card](https://goreportcard.com/badge/github.com/vingarcia/structscanner)
+[![Go Reference](https://pkg.go.dev/badge/github.com/vingarcia/structi.svg)](https://pkg.go.dev/github.com/vingarcia/structi)
+![Go Report Card](https://goreportcard.com/badge/github.com/vingarcia/structi)
 
 # Intro
 

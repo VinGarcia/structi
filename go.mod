@@ -1,4 +1,4 @@
-module github.com/vingarcia/structscanner
+module github.com/vingarcia/structi
 
 go 1.18
 

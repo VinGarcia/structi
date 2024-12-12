@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"testing"
 
-	ss "github.com/vingarcia/structscanner"
-	tt "github.com/vingarcia/structscanner/internal/testtools"
+	ss "github.com/vingarcia/structi"
+	tt "github.com/vingarcia/structi/internal/testtools"
 )
 
 func TestForEach(t *testing.T) {

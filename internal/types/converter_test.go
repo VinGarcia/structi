@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	tt "github.com/vingarcia/structscanner/internal/testtools"
+	tt "github.com/vingarcia/structi/internal/testtools"
 )
 
 func TestConverter(t *testing.T) {
