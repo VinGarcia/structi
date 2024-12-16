@@ -157,145 +157,104 @@ func TestForEach(t *testing.T) {
 		})
 	})
 
-	/*
-		t.Run("nested slices", func(t *testing.T) {
-			t.Run("should convert each item of a slice", func(t *testing.T) {
-				decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-					return []interface{}{1, 2, 3}, nil
-				})
+	t.Run("nested slices", func(t *testing.T) {
+		t.Run("should convert each item of a slice", func(t *testing.T) {
+			var output struct {
+				Slice []int `map:"slice"`
+			}
+			err := ss.ForEach(&output, func(field ss.Field) error {
+				return field.Set([]interface{}{1, 2, 3})
+			})
+			tt.AssertNoErr(t, err)
+			tt.AssertEqual(t, output.Slice, []int{1, 2, 3})
+		})
 
+		t.Run("should convert each item of a slice even with different types", func(t *testing.T) {
+			var output struct {
+				Slice []float64 `map:"slice"`
+			}
+			err := ss.ForEach(&output, func(field ss.Field) error {
+				return field.Set([]interface{}{1, 2, 3})
+			})
+			tt.AssertNoErr(t, err)
+			tt.AssertEqual(t, output.Slice, []float64{1.0, 2.0, 3.0})
+		})
+
+		t.Run("should work with slices of pointers", func(t *testing.T) {
+			var output struct {
+				Slice []int `map:"slice"`
+			}
+			err := ss.ForEach(&output, func(field ss.Field) error {
+				return field.Set([]*int{
+					intPtr(1),
+					intPtr(2),
+					intPtr(3),
+				})
+			})
+			tt.AssertNoErr(t, err)
+			tt.AssertEqual(t, output.Slice, []int{1, 2, 3})
+		})
+
+		t.Run("should work with slices of pointers or different types", func(t *testing.T) {
+			var output struct {
+				Slice []float64 `map:"slice"`
+			}
+			err := ss.ForEach(&output, func(field ss.Field) error {
+				return field.Set([]*int{
+					intPtr(1),
+					intPtr(2),
+					intPtr(3),
+				})
+			})
+			tt.AssertNoErr(t, err)
+			tt.AssertEqual(t, output.Slice, []float64{1.0, 2.0, 3.0})
+		})
+
+		t.Run("should work with pointers to slices", func(t *testing.T) {
+			t.Run("source pointer target non-pointer", func(t *testing.T) {
 				var output struct {
 					Slice []int `map:"slice"`
 				}
-				err := ss.ForEach(&output, decoder)
+				err := ss.ForEach(&output, func(field ss.Field) error {
+					return field.Set(&[]int{1, 2, 3})
+				})
 				tt.AssertNoErr(t, err)
 				tt.AssertEqual(t, output.Slice, []int{1, 2, 3})
 			})
 
-			t.Run("should convert each item of a slice even with different types", func(t *testing.T) {
-				decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-					return []interface{}{1, 2, 3}, nil
-				})
-
+			t.Run("source non-pointer target pointer", func(t *testing.T) {
 				var output struct {
-					Slice []float64 `map:"slice"`
+					Slice *[]int `map:"slice"`
 				}
-				err := ss.ForEach(&output, decoder)
-				tt.AssertNoErr(t, err)
-				tt.AssertEqual(t, output.Slice, []float64{1.0, 2.0, 3.0})
-			})
-
-			t.Run("should work with slices of pointers", func(t *testing.T) {
-				decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-					return []*int{
-						intPtr(1),
-						intPtr(2),
-						intPtr(3),
-					}, nil
+				err := ss.ForEach(&output, func(field ss.Field) error {
+					return field.Set([]int{1, 2, 3})
 				})
+				tt.AssertNoErr(t, err)
+				tt.AssertEqual(t, output.Slice, &[]int{1, 2, 3})
+			})
+		})
 
+		t.Run("should work with slices of nested structs/maps", func(t *testing.T) {
+			t.Run("input and target being a slice of maps", func(t *testing.T) {
 				var output struct {
-					Slice []int `map:"slice"`
+					Slice []map[string]any `map:"slice"`
 				}
-				err := ss.ForEach(&output, decoder)
-				tt.AssertNoErr(t, err)
-				tt.AssertEqual(t, output.Slice, []int{1, 2, 3})
-			})
-
-			t.Run("should work with slices of pointers or different types", func(t *testing.T) {
-				decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-					return []*int{
-						intPtr(1),
-						intPtr(2),
-						intPtr(3),
-					}, nil
-				})
-
-				var output struct {
-					Slice []float64 `map:"slice"`
-				}
-				err := ss.ForEach(&output, decoder)
-				tt.AssertNoErr(t, err)
-				tt.AssertEqual(t, output.Slice, []float64{1.0, 2.0, 3.0})
-			})
-
-			t.Run("should work with pointers to slices", func(t *testing.T) {
-				t.Run("source pointer target non-pointer", func(t *testing.T) {
-					decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-						return &[]int{1, 2, 3}, nil
-					})
-
-					var output struct {
-						Slice []int `map:"slice"`
-					}
-					err := ss.ForEach(&output, decoder)
-					tt.AssertNoErr(t, err)
-					tt.AssertEqual(t, output.Slice, []int{1, 2, 3})
-				})
-
-				t.Run("source non-pointer target pointer", func(t *testing.T) {
-					decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-						return []int{1, 2, 3}, nil
-					})
-
-					var output struct {
-						Slice *[]int `map:"slice"`
-					}
-					err := ss.ForEach(&output, decoder)
-					tt.AssertNoErr(t, err)
-					tt.AssertEqual(t, output.Slice, &[]int{1, 2, 3})
-				})
-			})
-
-			t.Run("should work with slices of nested structs/maps", func(t *testing.T) {
-				t.Run("input and target being a slice of maps", func(t *testing.T) {
-					decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-						return []map[string]any{
-							{
-								"name": "fakeAttrName",
-							},
-						}, nil
-					})
-
-					var output struct {
-						Slice []map[string]any `map:"slice"`
-					}
-					err := ss.ForEach(&output, decoder)
-					tt.AssertNoErr(t, err)
-					tt.AssertEqual(t, output.Slice, []map[string]any{
+				err := ss.ForEach(&output, func(field ss.Field) error {
+					return field.Set([]map[string]any{
 						{
 							"name": "fakeAttrName",
 						},
 					})
 				})
-
-				t.Run("input being a slice of maps and target being a struct", func(t *testing.T) {
-					decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
-						return []map[string]any{
-							{
-								"name": "fakeAttrName",
-							},
-						}, nil
-					})
-
-					type namedStruct struct {
-						Name string `map:"name"`
-					}
-
-					var output struct {
-						Slice []namedStruct `map:"slice"`
-					}
-					err := ss.ForEach(&output, decoder)
-					tt.AssertNoErr(t, err)
-					tt.AssertEqual(t, output.Slice, []namedStruct{
-						{
-							Name: "fakeAttrName",
-						},
-					})
+				tt.AssertNoErr(t, err)
+				tt.AssertEqual(t, output.Slice, []map[string]any{
+					{
+						"name": "fakeAttrName",
+					},
 				})
 			})
 		})
-	*/
+	})
 
 	t.Run("should convert types correctly", func(t *testing.T) {
 		t.Run("should convert different types of integers", func(t *testing.T) {
@@ -418,7 +377,7 @@ func TestForEach(t *testing.T) {
 				targetStruct: &struct {
 					Attr1 []string `some_tag:"attr1"`
 				}{},
-				expectErrToContain: []string{"error decoding field", "Attr1", "string", "[]string", "example-value"},
+				expectErrToContain: []string{"iteration error", "Attr1", "string", "[]string", "example-value"},
 			},
 			// {
 			// desc:  "should report error if the conversion fails for one of the slice elements",
@@ -512,7 +471,7 @@ func TestForEach(t *testing.T) {
 			)
 
 			// Sanity check: the outer error _does_ contain the string we don't want to see in the wrapped error
-			tt.AssertErrContains(t, err, "error decoding field", "A", "[]string", "[]int", "not-an-int")
+			tt.AssertErrContains(t, err, "iteration error", "A", "string", "[]int", "not-an-int")
 
 			// In this case, it should just be a wrapped sting error
 			wrapped := errors.Unwrap(err)
@@ -558,6 +517,6 @@ func TestGetStructInfo(t *testing.T) {
 	})
 }
 
-// func intPtr(i int) *int {
-// return &i
-// }
+func intPtr(i int) *int {
+	return &i
+}

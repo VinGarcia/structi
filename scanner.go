@@ -69,23 +69,60 @@ func ForEach(targetStruct interface{}, iterate IteratorFunc) error {
 		err := iterate(Field{
 			fieldInfo: &field,
 			Value:     v.Elem().Field(field.idx).Addr().Interface(),
-			Set: func(value any) error {
-				convertedValue, err := types.NewConverter(value).Convert(field.Type)
-				if err != nil {
-					return err
-				}
-
-				v.Elem().Field(field.idx).Set(convertedValue)
-
-				return nil
-			},
+			Set:       setAttrValue(v, field),
 		})
 		if err != nil {
-			return fmt.Errorf("error decoding field '%s' of type '%v': %w", field.Name, field.Type, err)
+			return fmt.Errorf("iteration error on field '%s' of type '%v': %w", field.Name, field.Type, err)
 		}
 	}
 
 	return nil
+}
+
+func setAttrValue(structPtrValue reflect.Value, field fieldInfo) func(value any) error {
+	return func(value any) error {
+		if field.Kind != reflect.Slice {
+			convertedValue, err := types.NewConverter(value).Convert(field.Type)
+			if err != nil {
+				return err
+			}
+
+			structPtrValue.Elem().Field(field.idx).Set(convertedValue)
+			return nil
+		}
+
+		// In case it is a slice
+
+		sliceValue := reflect.ValueOf(value)
+		sliceType := sliceValue.Type()
+		if sliceType.Kind() == reflect.Ptr {
+			sliceType = sliceType.Elem()
+			sliceValue = sliceValue.Elem()
+		}
+
+		if sliceType.Kind() != reflect.Slice {
+			t := structPtrValue.Elem().Type()
+			return fmt.Errorf("expected slice for field %#v but got %v of type %v", t.Field(field.idx), sliceValue, sliceType)
+		}
+
+		elemType := field.Type.Elem()
+
+		sliceLen := sliceValue.Len()
+		targetSlice := reflect.MakeSlice(field.Type, sliceLen, sliceLen)
+		for i := 0; i < sliceLen; i++ {
+			convertedValue, err := types.NewConverter(sliceValue.Index(i).Interface()).Convert(elemType)
+			if err != nil {
+				t := structPtrValue.Elem().Type()
+				return fmt.Errorf("error converting %v[%d]: %w", t.Field(field.idx).Name, i, err)
+			}
+
+			targetSlice.Index(i).Set(convertedValue)
+		}
+
+		structPtrValue.Elem().Field(field.idx).Set(targetSlice)
+
+		return nil
+	}
 }
 
 // This cache is kept as a pkg variable
