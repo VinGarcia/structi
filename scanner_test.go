@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	ss "github.com/vingarcia/structi"
+	"github.com/vingarcia/structi"
 	tt "github.com/vingarcia/structi/internal/testtools"
 )
 
@@ -15,7 +15,7 @@ func TestForEach(t *testing.T) {
 		var output struct {
 			Attr1 string `env:"attr1"`
 		}
-		err := ss.ForEach(&output, func(f ss.Field) error {
+		err := structi.ForEach(&output, func(f structi.Field) error {
 			return f.Set("fake-value-for-string")
 		})
 		tt.AssertNoErr(t, err)
@@ -28,7 +28,7 @@ func TestForEach(t *testing.T) {
 			Attr2 string `someothertag:"attr2"`
 		}
 		output.Attr2 = "placeholder"
-		err := ss.ForEach(&output, func(field ss.Field) error {
+		err := structi.ForEach(&output, func(field structi.Field) error {
 			envTag := field.Tags["env"]
 			if envTag == "" {
 				return nil
@@ -47,7 +47,7 @@ func TestForEach(t *testing.T) {
 			Attr2 string `map:"f2"`
 			Attr3 string `map:"f3"`
 		}
-		err := ss.ForEach(&output, func(field ss.Field) error {
+		err := structi.ForEach(&output, func(field structi.Field) error {
 			v := map[string]string{
 				"f1": "v1",
 				"f2": "v2",
@@ -67,7 +67,7 @@ func TestForEach(t *testing.T) {
 			Attr1 string `env:"attr1"`
 			attr2 string `env:"attr2"`
 		}
-		err := ss.ForEach(&output, func(field ss.Field) error {
+		err := structi.ForEach(&output, func(field structi.Field) error {
 			return field.Set("fake-value-for-string")
 		})
 		tt.AssertNoErr(t, err)
@@ -83,9 +83,9 @@ func TestForEach(t *testing.T) {
 					Attr2 int `env:"attr1"`
 				}
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				if field.Kind == reflect.Struct {
-					return ss.ForEach(field.Value, func(field ss.Field) error {
+					return structi.ForEach(field.Value, func(field structi.Field) error {
 						return field.Set(42)
 					})
 				}
@@ -99,9 +99,9 @@ func TestForEach(t *testing.T) {
 
 		/*
 			t.Run("should parse fields recursively even for nil pointers to struct", func(t *testing.T) {
-				decoder := ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
+				decoder := structi.FuncTagDecoder(func(field structi.Field) (interface{}, error) {
 					if field.Kind == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-						return ss.FuncTagDecoder(func(field ss.Field) (interface{}, error) {
+						return structi.FuncTagDecoder(func(field structi.Field) (interface{}, error) {
 							return 42, nil
 						}), nil
 					}
@@ -115,7 +115,7 @@ func TestForEach(t *testing.T) {
 						Attr2 int `env:"attr2"`
 					}
 				}
-				err := ss.ForEach(&output, decoder)
+				err := structi.ForEach(&output, decoder)
 				tt.AssertNoErr(t, err)
 				tt.AssertEqual(t, output.Attr1, 64)
 				tt.AssertEqual(t, output.OtherStruct.Attr2, 42)
@@ -145,9 +145,9 @@ func TestForEach(t *testing.T) {
 			}
 			for _, test := range tests {
 				t.Run(test.desc, func(t *testing.T) {
-					err := ss.ForEach(test.targetStruct, func(field ss.Field) error {
+					err := structi.ForEach(test.targetStruct, func(field structi.Field) error {
 						// Some tag decoder:
-						return ss.ForEach(field.Value, func(field ss.Field) error {
+						return structi.ForEach(field.Value, func(field structi.Field) error {
 							return field.Set(42)
 						})
 					})
@@ -162,7 +162,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Slice []int `map:"slice"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set([]interface{}{1, 2, 3})
 			})
 			tt.AssertNoErr(t, err)
@@ -173,7 +173,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Slice []float64 `map:"slice"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set([]interface{}{1, 2, 3})
 			})
 			tt.AssertNoErr(t, err)
@@ -184,7 +184,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Slice []int `map:"slice"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set([]*int{
 					intPtr(1),
 					intPtr(2),
@@ -199,7 +199,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Slice []float64 `map:"slice"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set([]*int{
 					intPtr(1),
 					intPtr(2),
@@ -215,7 +215,7 @@ func TestForEach(t *testing.T) {
 				var output struct {
 					Slice []int `map:"slice"`
 				}
-				err := ss.ForEach(&output, func(field ss.Field) error {
+				err := structi.ForEach(&output, func(field structi.Field) error {
 					return field.Set(&[]int{1, 2, 3})
 				})
 				tt.AssertNoErr(t, err)
@@ -226,7 +226,7 @@ func TestForEach(t *testing.T) {
 				var output struct {
 					Slice *[]int `map:"slice"`
 				}
-				err := ss.ForEach(&output, func(field ss.Field) error {
+				err := structi.ForEach(&output, func(field structi.Field) error {
 					return field.Set([]int{1, 2, 3})
 				})
 				tt.AssertNoErr(t, err)
@@ -239,7 +239,7 @@ func TestForEach(t *testing.T) {
 				var output struct {
 					Slice []map[string]any `map:"slice"`
 				}
-				err := ss.ForEach(&output, func(field ss.Field) error {
+				err := structi.ForEach(&output, func(field structi.Field) error {
 					return field.Set([]map[string]any{
 						{
 							"name": "fakeAttrName",
@@ -261,7 +261,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Attr1 int `env:"attr1"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set(uint64(10))
 			})
 			tt.AssertNoErr(t, err)
@@ -272,7 +272,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Attr1 int `env:"attr1"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				i := 64
 				return field.Set(&i)
 			})
@@ -284,7 +284,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Attr1 *int `env:"attr1"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set(64)
 			})
 			tt.AssertNoErr(t, err)
@@ -300,7 +300,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Attr1 Foo `env:"attr1"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set(Foo{
 					Name: "test",
 				})
@@ -320,7 +320,7 @@ func TestForEach(t *testing.T) {
 			var output struct {
 				Foo `env:"attr1"`
 			}
-			err := ss.ForEach(&output, func(field ss.Field) error {
+			err := structi.ForEach(&output, func(field structi.Field) error {
 				return field.Set(Foo{
 					Name:      field.Name,      // should be foo
 					IsEmbeded: field.IsEmbeded, // should be true
@@ -432,7 +432,7 @@ func TestForEach(t *testing.T) {
 		}
 		for _, test := range tests {
 			t.Run(test.desc, func(t *testing.T) {
-				err := ss.ForEach(test.targetStruct, func(field ss.Field) error {
+				err := structi.ForEach(test.targetStruct, func(field structi.Field) error {
 					return field.Set(test.value)
 				})
 				tt.AssertErrContains(t, err, test.expectErrToContain...)
@@ -444,11 +444,11 @@ func TestForEach(t *testing.T) {
 
 		t.Run("wrap error from Decoder", func(t *testing.T) {
 			// Use a int parse error as the type example
-			err := ss.ForEach(
+			err := structi.ForEach(
 				&struct {
 					A int `a:""`
 				}{},
-				func(field ss.Field) error {
+				func(field structi.Field) error {
 					_, err := strconv.ParseInt("not-an-int", 10, 0)
 					return err
 				},
@@ -461,11 +461,11 @@ func TestForEach(t *testing.T) {
 
 		t.Run("wrap error from slice conversion", func(t *testing.T) {
 			// Use a int parse error as the type example
-			err := ss.ForEach(
+			err := structi.ForEach(
 				&struct {
 					A []int
 				}{},
-				func(field ss.Field) error {
+				func(field structi.Field) error {
 					return field.Set([]string{"not-an-int"})
 				},
 			)
@@ -487,32 +487,32 @@ func TestGetStructInfo(t *testing.T) {
 
 	t.Run("should work for a struct pointer", func(t *testing.T) {
 		var s MyStruct
-		si, err := ss.GetStructInfo(&s)
+		si, err := structi.GetStructInfo(&s)
 		tt.AssertNoErr(t, err)
 		tt.AssertEqual(t, len(si.Fields), 1)
 	})
 
 	t.Run("should fail for a struct", func(t *testing.T) {
 		var s MyStruct
-		_, err := ss.GetStructInfo(s)
+		_, err := structi.GetStructInfo(s)
 		tt.AssertErrContains(t, err, "struct pointer", "MyStruct")
 	})
 
 	t.Run("should work for reflect.Type", func(t *testing.T) {
 		typ := reflect.TypeOf(MyStruct{})
-		si, err := ss.GetStructInfo(typ)
+		si, err := structi.GetStructInfo(typ)
 		tt.AssertNoErr(t, err)
 		tt.AssertEqual(t, len(si.Fields), 1)
 	})
 	t.Run("should work for reflect.Type of a struct pointer", func(t *testing.T) {
 		typ := reflect.TypeOf(&MyStruct{})
-		si, err := ss.GetStructInfo(typ)
+		si, err := structi.GetStructInfo(typ)
 		tt.AssertNoErr(t, err)
 		tt.AssertEqual(t, len(si.Fields), 1)
 	})
 	t.Run("should fail if input type is not a kind of struct or struct pointer", func(t *testing.T) {
 		typ := reflect.TypeOf(1)
-		_, err := ss.GetStructInfo(typ)
+		_, err := structi.GetStructInfo(typ)
 		tt.AssertErrContains(t, err, "can only get struct info from structs", "int")
 	})
 }
