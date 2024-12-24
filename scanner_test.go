@@ -1,4 +1,4 @@
-package structscanner_test
+package structi_test
 
 import (
 	"errors"

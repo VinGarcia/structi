@@ -1,4 +1,4 @@
-package structscanner
+package structi
 
 import (
 	"fmt"
