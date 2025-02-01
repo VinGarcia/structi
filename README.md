@@ -3,7 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/vingarcia/structi.svg)](https://pkg.go.dev/github.com/vingarcia/structi)
 ![Go Report Card](https://goreportcard.com/badge/github.com/vingarcia/structi)
 
-# Welcome to Struct Iterator
+# Welcome to the Go Struct Iterator
 
 This project was created to make it safe, easy and efficient
 to use reflection to read and write data to and from structs.
@@ -94,6 +94,25 @@ import (
 	"github.com/vingarcia/structi"
 )
 
+func LoadFromMap(structPtr any, inputMap map[string]any) error {
+	return structi.ForEach(structPtr, func(field structi.Field) error {
+		tagValue := field.Tags["map"]
+		if tagValue == "" {
+			return nil
+		}
+
+		if field.Kind == reflect.Struct {
+			subMap, _ := inputMap[tagValue].(map[string]any)
+			if subMap != nil {
+				return LoadFromMap(field.Value, subMap)
+			}
+		}
+
+		return field.Set(inputMap[tagValue])
+	})
+}
+
+// This main func just illustrates the usage of the LoadFromMap function above
 func main() {
 	var user struct {
 		ID       int    `map:"id"`
@@ -126,27 +145,11 @@ func main() {
 	b, _ := json.MarshalIndent(user, "", "  ")
 	fmt.Println("loaded user:", string(b))
 }
-
-func LoadFromMap(structPtr any, inputMap map[string]any) error {
-	return structi.ForEach(structPtr, func(field structi.Field) error {
-		tagValue := field.Tags["map"]
-		if tagValue == "" {
-			return nil
-		}
-
-		if field.Kind == reflect.Struct {
-			subMap, _ := inputMap[tagValue].(map[string]any)
-			if subMap != nil {
-				return LoadFromMap(field.Value, subMap)
-			}
-		}
-
-		return field.Set(inputMap[tagValue])
-	})
-}
 ```
 
-## Info available on field
+## What info can I get from each attribute of the struct?
+
+> Note that the actual struct is slightly different, it is shown like this for simplicity
 
 ```golang
 type Field struct {
@@ -161,8 +164,6 @@ type Field struct {
 	Value any
 }
 ```
-
-> Note the actual struct is slightly different, it is shown like this simplicity
 
 ## GetStructInfo function
 

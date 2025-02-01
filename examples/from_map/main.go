@@ -9,6 +9,25 @@ import (
 	"github.com/vingarcia/structi"
 )
 
+func LoadFromMap(structPtr any, inputMap map[string]any) error {
+	return structi.ForEach(structPtr, func(field structi.Field) error {
+		tagValue := field.Tags["map"]
+		if tagValue == "" {
+			return nil
+		}
+
+		if field.Kind == reflect.Struct {
+			subMap, _ := inputMap[tagValue].(map[string]any)
+			if subMap != nil {
+				return LoadFromMap(field.Value, subMap)
+			}
+		}
+
+		return field.Set(inputMap[tagValue])
+	})
+}
+
+// This main func just illustrates the usage of the LoadFromMap function above
 func main() {
 	var user struct {
 		ID       int    `map:"id"`
@@ -40,22 +59,4 @@ func main() {
 
 	b, _ := json.MarshalIndent(user, "", "  ")
 	fmt.Println("loaded user:", string(b))
-}
-
-func LoadFromMap(structPtr any, inputMap map[string]any) error {
-	return structi.ForEach(structPtr, func(field structi.Field) error {
-		tagValue := field.Tags["map"]
-		if tagValue == "" {
-			return nil
-		}
-
-		if field.Kind == reflect.Struct {
-			subMap, _ := inputMap[tagValue].(map[string]any)
-			if subMap != nil {
-				return LoadFromMap(field.Value, subMap)
-			}
-		}
-
-		return field.Set(inputMap[tagValue])
-	})
 }
