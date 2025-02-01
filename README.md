@@ -6,14 +6,14 @@
 # Welcome to Struct Iterator
 
 This project was created to make it safe, easy and efficient
-to use reflection to read and write data to structs.
+to use reflection to read and write data to and from structs.
 
 Note that it is always faster if you don't use reflection,
-but when we need to caching the info you get from the
-struct is the most efficient way of doing it which is
-what this library offers.
+but when you need to use it the most efficient way of doing it
+is by caching the info you get from the types which is
+something this library do.
 
-So to make it clear, this
+So to make it clear, this library is not something like:
 
 - https://github.com/mitchellh/mapstructure
 
@@ -30,9 +30,11 @@ this library. Both examples are also public so you can use them
 directly if you want.
 
 But the interesting part is that both were written
-in very few lines of code, so check that out too.
+in very few lines of code.
 
 ## Usage Examples:
+
+### Loading data from `os.Getenv()`:
 
 The code below will fill the struct with data from env variables.
 
@@ -60,8 +62,9 @@ func main() {
 	}
 
 	err := structi.ForEach(&config, func(field structi.Field) error {
-		if field.Tags["env"] != "" {
-			return field.Set(os.Getenv(field.Tags["env"]))
+		envTag := field.Tags["env"]
+		if envTag != "" {
+			return field.Set(os.Getenv(envTag))
 		}
 		return nil
 	})
@@ -74,9 +77,10 @@ func main() {
 }
 ```
 
-The above example loads data from a global state into the struct.
+### Loading data from a map:
 
-This second example will fill a struct with the values of an input map:
+This second example will fill a struct with the values of an input map, and it will
+also handle nested substructs using recursion:
 
 ```golang
 package main
@@ -91,8 +95,6 @@ import (
 )
 
 func main() {
-	// This one has state and maps a single map to a struct,
-	// so you might need to instantiate a new decoder for each input map:
 	var user struct {
 		ID       int    `map:"id"`
 		Username string `map:"username"`

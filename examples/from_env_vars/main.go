@@ -18,8 +18,9 @@ func main() {
 	}
 
 	err := structi.ForEach(&config, func(field structi.Field) error {
-		if field.Tags["env"] != "" {
-			return field.Set(os.Getenv(field.Tags["env"]))
+		envTag := field.Tags["env"]
+		if envTag != "" {
+			return field.Set(os.Getenv(envTag))
 		}
 		return nil
 	})
