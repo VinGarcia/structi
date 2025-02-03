@@ -99,23 +99,21 @@ func TestForEach(t *testing.T) {
 
 		/*
 			t.Run("should parse fields recursively even for nil pointers to struct", func(t *testing.T) {
-				decoder := structi.FuncTagDecoder(func(field structi.Field) (interface{}, error) {
-					if field.Kind == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-						return structi.FuncTagDecoder(func(field structi.Field) (interface{}, error) {
-							return 42, nil
-						}), nil
-					}
-
-					return 64, nil
-				})
-
 				var output struct {
 					Attr1       int `env:"attr1"`
 					OtherStruct *struct {
 						Attr2 int `env:"attr2"`
 					}
 				}
-				err := structi.ForEach(&output, decoder)
+				err := structi.ForEach(&output, func(field structi.Field) error {
+					if field.Kind == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
+						return structi.ForEach(field.Value, func(field structi.Field) error {
+							return field.Set(42)
+						})
+					}
+
+					return field.Set(64)
+				})
 				tt.AssertNoErr(t, err)
 				tt.AssertEqual(t, output.Attr1, 64)
 				tt.AssertEqual(t, output.OtherStruct.Attr2, 42)
@@ -379,14 +377,14 @@ func TestForEach(t *testing.T) {
 				}{},
 				expectErrToContain: []string{"iteration error", "Attr1", "string", "[]string", "example-value"},
 			},
-			// {
-			// desc:  "should report error if the conversion fails for one of the slice elements",
-			// value: []any{42, "not a number", 43},
-			// targetStruct: &struct {
-			// Attr1 []int `some_tag:"attr1"`
-			// }{},
-			// expectErrToContain: []string{"error decoding field", "Attr1", "int", "string"},
-			// },
+			{
+				desc:  "should report error if the conversion fails for one of the slice elements",
+				value: []any{42, "this is not a number", 43},
+				targetStruct: &struct {
+					Attr1 []int `some_tag:"attr1"`
+				}{},
+				expectErrToContain: []string{"Attr1", "int", "string", "this is not a number"},
+			},
 			{
 				desc:  "should report error if tag has no name",
 				value: "example-value",
