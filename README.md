@@ -1,5 +1,5 @@
 [![CI](https://github.com/VinGarcia/structi/actions/workflows/ci.yml/badge.svg)](https://github.com/VinGarcia/structi/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/VinGarcia/structi/branch/master/graph/badge.svg?token=5CNJ867C66)](https://codecov.io/gh/VinGarcia/structi)
+[![codecov](https://codecov.io/github/VinGarcia/structi/graph/badge.svg?token=GERNGT7Q7J)](https://codecov.io/github/VinGarcia/structi)
 [![Go Reference](https://pkg.go.dev/badge/github.com/vingarcia/structi.svg)](https://pkg.go.dev/github.com/vingarcia/structi)
 ![Go Report Card](https://goreportcard.com/badge/github.com/vingarcia/structi)
 
