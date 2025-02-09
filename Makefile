@@ -36,3 +36,6 @@ get_nested_struct_info:
 
 write_to_nested_structs:
 	go run ./examples/write_to_nested_structs/.
+
+working_with_slices:
+	go run ./examples/working_with_slices/.

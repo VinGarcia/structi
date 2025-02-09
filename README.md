@@ -32,6 +32,8 @@ directly if you want.
 But the interesting part is that both were written
 in very few lines of code.
 
+> For working with slices see [the `slicei` subpackage here](https://github.com/VinGarcia/structi/tree/master/slicei)
+
 ## Usage Examples:
 
 ### Loading data from `os.Getenv()`:
@@ -147,7 +149,7 @@ func main() {
 }
 ```
 
-## Allocating memory and writing to nested substructs:
+### Allocating memory and writing to nested substructs:
 
 A more advanced example might involve pointers to substructs,
 if you are iterating through such a struct you'll need to call
@@ -188,11 +190,11 @@ func main() {
 		return field.Set(64)
 	})
 	if err != nil {
-		log.Fatalf("error loading env vars: %v", err)
+		log.Fatalf("error modifying struct: %v", err)
 	}
 
 	b, _ := json.MarshalIndent(output, "", "  ")
-	fmt.Println("loaded config:", string(b))
+	fmt.Println("modified struct:", string(b))
 }
 ```
 
@@ -290,6 +292,57 @@ func main() {
 }
 ```
 
+## Working with Slices
+
+We also have a few functions to handle slices.
+This is particularly useful for handling slices nested inside
+structs we are iterating over:
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"reflect"
+
+	"github.com/vingarcia/structi"
+	"github.com/vingarcia/structi/slicei"
+)
+
+func main() {
+	var output struct {
+		NotASlice       int
+		EmptySlice      []uint   `tag:"s1"`
+		SliceWithValues []string `tag:"s2"`
+	}
+	output.SliceWithValues = []string{"foo", "bar"}
+
+	err := structi.ForEach(&output, func(field structi.Field) error {
+		if field.Kind != reflect.Slice {
+			// Let's ignore non slices for this example
+			return nil
+		}
+
+		if field.Tags["tag"] == "s1" {
+			// 42 is an int and will be converted to uint automatically:
+			return slicei.Append(field.Value, int(42))
+		}
+
+		return slicei.ForEach(field.Value, func(field slicei.Field) error {
+			// Add the index number at the end of each slice value:
+			return field.Set(fmt.Sprint(reflect.ValueOf(field.Value).Elem().Interface(), field.Index))
+		})
+	})
+	if err != nil {
+		log.Fatalf("error modifying struct: %v", err)
+	}
+
+	b, _ := json.MarshalIndent(output, "", "  ")
+	fmt.Println("modified struct with slices:", string(b))
+}
+```
 
 ## License
 

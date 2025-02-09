@@ -32,9 +32,9 @@ func main() {
 		return field.Set(64)
 	})
 	if err != nil {
-		log.Fatalf("error loading env vars: %v", err)
+		log.Fatalf("error modifying struct: %v", err)
 	}
 
 	b, _ := json.MarshalIndent(output, "", "  ")
-	fmt.Println("loaded config:", string(b))
+	fmt.Println("modified struct:", string(b))
 }
