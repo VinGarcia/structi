@@ -147,6 +147,55 @@ func main() {
 }
 ```
 
+## Allocating memory and writing to nested substructs:
+
+A more advanced example might involve pointers to substructs,
+if you are iterating through such a struct you'll need to call
+`reflect.New()` to have a new instance of it, e.g.:
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"reflect"
+
+	"github.com/vingarcia/structi"
+)
+
+func main() {
+	var output struct {
+		Attr1       int `env:"attr1"`
+		OtherStruct *struct {
+			Attr2 int `env:"attr2"`
+		}
+	}
+	err := structi.ForEach(&output, func(field structi.Field) error {
+		if field.Kind == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
+			subStruct := reflect.New(field.Type.Elem())
+
+			return errors.Join(
+				structi.ForEach(subStruct, func(field structi.Field) error {
+					return field.Set(42)
+				}),
+				field.Set(subStruct),
+			)
+		}
+
+		return field.Set(64)
+	})
+	if err != nil {
+		log.Fatalf("error loading env vars: %v", err)
+	}
+
+	b, _ := json.MarshalIndent(output, "", "  ")
+	fmt.Println("loaded config:", string(b))
+}
+```
+
 ## What info can I get from each attribute of the struct?
 
 > Note that the actual struct is slightly different, it is shown like this for simplicity

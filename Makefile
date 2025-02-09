@@ -33,3 +33,6 @@ get_struct_info:
 
 get_nested_struct_info:
 	go run ./examples/get_nested_struct_info/.
+
+write_to_nested_structs:
+	go run ./examples/write_to_nested_structs/.
