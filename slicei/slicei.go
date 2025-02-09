@@ -23,6 +23,28 @@ type Field struct {
 	Set func(value any) error
 }
 
+func Append(targetSlice any, items ...any) error {
+	t, v, err := getSliceInfo(targetSlice)
+	if err != nil {
+		return err
+	}
+
+	elemType := t.Elem()
+	sliceValue := v.Elem()
+	for _, item := range items {
+		convertedValue, err := types.NewConverter(item).Convert(elemType)
+		if err != nil {
+			return fmt.Errorf("error converting %+v to %v: %w", item, elemType, err)
+		}
+
+		sliceValue = reflect.Append(sliceValue, convertedValue)
+	}
+
+	v.Elem().Set(sliceValue)
+
+	return nil
+}
+
 // ForEach iterates over the slice calling the iterate function
 // for each item
 func ForEach(targetSlice interface{}, iterate IteratorFunc) error {
