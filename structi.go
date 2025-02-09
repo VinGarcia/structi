@@ -57,8 +57,8 @@ func GetStructInfo(targetStruct interface{}) (si StructInfo, err error) {
 	return si, err
 }
 
-// ForEach reads from the input decoder in order to fill the
-// attributes of an target struct.
+// ForEach iterates over the attributes of the input struct calling
+// the `iterate` function for each attribute
 func ForEach(targetStruct interface{}, iterate IteratorFunc) error {
 	_, v, fields, err := getStructInfo(targetStruct)
 	if err != nil {

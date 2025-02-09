@@ -23,8 +23,8 @@ type Field struct {
 	Set func(value any) error
 }
 
-// ForEach reads from the input decoder in order to fill the
-// attributes of an target struct.
+// ForEach iterates over the slice calling the iterate function
+// for each item
 func ForEach(targetSlice interface{}, iterate IteratorFunc) error {
 	_, v, err := getSliceInfo(targetSlice)
 	if err != nil {
