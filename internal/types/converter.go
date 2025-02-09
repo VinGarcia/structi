@@ -33,8 +33,11 @@ func NewConverter(v interface{}) Converter {
 		v = (*interface{})(nil)
 	}
 
-	baseValue := reflect.ValueOf(v)
-	baseType := reflect.TypeOf(v)
+	baseValue, ok := v.(reflect.Value)
+	if !ok {
+		baseValue = reflect.ValueOf(v)
+	}
+	baseType := baseValue.Type()
 
 	elemType := baseType
 	elemValue := baseValue

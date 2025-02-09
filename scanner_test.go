@@ -97,28 +97,31 @@ func TestForEach(t *testing.T) {
 			tt.AssertEqual(t, output.OtherStruct.Attr2, 42)
 		})
 
-		/*
-			t.Run("should parse fields recursively even for nil pointers to struct", func(t *testing.T) {
-				var output struct {
-					Attr1       int `env:"attr1"`
-					OtherStruct *struct {
-						Attr2 int `env:"attr2"`
-					}
+		t.Run("should parse fields recursively even for nil pointers to struct", func(t *testing.T) {
+			var output struct {
+				Attr1       int `env:"attr1"`
+				OtherStruct *struct {
+					Attr2 int `env:"attr2"`
 				}
-				err := structi.ForEach(&output, func(field structi.Field) error {
-					if field.Kind == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-						return structi.ForEach(field.Value, func(field structi.Field) error {
-							return field.Set(42)
-						})
-					}
+			}
+			err := structi.ForEach(&output, func(field structi.Field) error {
+				if field.Kind == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
+					subStruct := reflect.New(field.Type.Elem())
 
-					return field.Set(64)
-				})
-				tt.AssertNoErr(t, err)
-				tt.AssertEqual(t, output.Attr1, 64)
-				tt.AssertEqual(t, output.OtherStruct.Attr2, 42)
+					return errors.Join(
+						structi.ForEach(subStruct, func(field structi.Field) error {
+							return field.Set(42)
+						}),
+						field.Set(subStruct),
+					)
+				}
+
+				return field.Set(64)
 			})
-		*/
+			tt.AssertNoErr(t, err)
+			tt.AssertEqual(t, output.Attr1, 64)
+			tt.AssertEqual(t, output.OtherStruct.Attr2, 42)
+		})
 
 		t.Run("should report error correctly for invalid nested values", func(t *testing.T) {
 			tests := []struct {

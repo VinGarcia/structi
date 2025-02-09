@@ -132,7 +132,10 @@ func setAttrValue(structPtrValue reflect.Value, field fieldInfo) func(value any)
 var structInfoCache = &sync.Map{}
 
 func getStructInfo(targetStruct interface{}) (reflect.Type, reflect.Value, []fieldInfo, error) {
-	v := reflect.ValueOf(targetStruct)
+	v, ok := targetStruct.(reflect.Value)
+	if !ok {
+		v = reflect.ValueOf(targetStruct)
+	}
 
 	t, fields, err := getStructInfoForType(v.Type())
 	if err != nil {
